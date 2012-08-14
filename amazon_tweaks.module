@@ -1,0 +1,45 @@
+<?php
+/**
+ * Amazon tweaks module
+ *
+ * @todo Make SearchIndex configurable (per content type)
+ * @todo Make autocomplete output configurable (e.g. show images)
+ */
+
+/**
+ * Implements hook_menu_alter()
+ */
+function amazon_tweaks_menu_alter(&$items) {
+  $items['asin/autocomplete']['page callback'] = 'amazon_tweaks_asin_autocomplete_callback';
+}
+
+/**
+ * Autocomplete callback for the asin_autocomplete widget
+ * @see asin_autocomplete_callback()
+ */
+function amazon_tweaks_asin_autocomplete_callback($string = '') {
+  $items = $matches = array();
+  // Search Amazon.
+  $parameters = array(
+    'ResponseGroup' => 'Medium',
+    'SearchIndex' => 'Books',
+    'Keywords' => urlencode($string)
+  );
+
+  $results = amazon_http_request('ItemSearch', $parameters);
+
+  // Process the results.
+  foreach($results->Items->Item as $xml) {
+    $items[(string) $xml->ASIN] = array(
+      'title' => (string) $xml->ItemAttributes->Title . ' (' . $xml->ItemAttributes->ProductGroup . ')',
+      'image' => $xml->SmallImage->URL
+    );
+  }
+  // Create our response.
+  foreach ($items as $asin => $data) {
+    $image = '<img src="'. $data['image']. '"/>';
+    // Add a class wrapper for a few required CSS overrides.
+    $matches[$data['title'] . ' [asin:' . $asin . ']'] = '<div class="reference-autocomplete">'. $image.$data['title'] . '</div>';
+  }
+  drupal_json_output($matches);
+}

@@ -1,0 +1,6 @@
+name = Amazon Tweaks
+description = Amazon module tweaks
+core = 7.x
+
+package = Amazon
+dependencies = asin
